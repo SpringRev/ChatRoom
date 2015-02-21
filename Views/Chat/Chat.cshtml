@@ -1,0 +1,115 @@
+﻿@{
+    ViewBag.Title = "Chat";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row navbar-collapse collapse">
+    <ul class="nav navbar-right">
+        <li><input class="nav btn-primary " type="button" id="btnlogout" value="Logout" /></li>
+    </ul>
+</div>
+<div class="container navbar navbar-form" style="width:980px;height:580px;border:1px solid;">
+    <div class="row" style="width:940px;">
+        <div class="nav col-md-1" style="padding:20px 0 20px 20px;">
+            <ul id="discussion" class="nav nav-pills nav-stacked" style="overflow-wrap:break-word; width:600px"></ul>
+        </div>
+
+        <div class="nav col-md-2 navbar-right" style="direction: rtl; height: 540px; overflow-y : scroll;width:200px;padding-top:20px">
+
+            <input type="hidden" id="hdnUserName" />
+            <ul id="title" class="nav nav-pills nav-stacked active"><strong>UsersList</strong></ul>
+            <ul id="userlist" class="nav nav-pills nav-stacked active"></ul>
+
+        </div>
+    </div>
+    <div class="row" style="width:940px;padding-left:20px;">
+        <input type="text" id="txtMessage" maxlength="300" style="width:880px" />
+        <input type="button" id="btnSend" value="Send" />
+        <label id="lblStatus"></label>
+    </div>
+</div>
+@section scripts {
+
+    <script src="~/Scripts/jquery.signalR-2.2.0.min.js"></script>
+    <script src="~/signalr/hubs"></script>
+    <script>
+        $(function () {
+            var chat = $.connection.chatHub;
+            var userList = $('#userlist');
+            var discussion = $('#discussion');
+            var txtMessage = $("#txtMessage");
+            var userName = $('#hdnUserName');
+            var typingStatus = $('#lblStatus');
+            var clickSend = $('#btnSend')
+
+            // Call Back Function from server Hub to block the users
+            chat.client.callchat = function () {
+                alert("The chat rooom is full with 20 users");
+                $.connection.hub.stop();
+                close();
+            };
+
+            // Call Back Function from server Hub to display the logged in User List
+            chat.client.displayUserList = function (users) {
+                userList.empty();
+                for (var i = 0; i < users.length; i++) {
+                    // Add the message to the page.
+                    userList.append('<li>' + users[i] + '</li>');
+
+                }
+            };
+            // Call Back Function from server hub to display the last 15 available messages against the user
+            chat.client.displayMessages = function (message) {
+                discussion.empty();
+                for (var i = 0; i < message.length; i++) {
+                    discussion.append('<li><strong>' + message[i]['UserName']
+                        + '</strong>: ' + message[i]['ChatMessage'] + '</li>');
+                }
+            };
+            //Login Phase
+            userName.val(prompt('Please enter your name:', ''));
+            txtMessage.focus();
+
+            // Function to start the hub connection
+            $.connection.hub.start().done(function () {
+
+                //Function call to the server Hub to login
+                if (userName.val() != "")
+                    chat.server.login(userName.val());
+                else
+                    userName.val(prompt('Please enter your name:', ''));
+
+                //Function call to the Hub to logout
+                $('#btnlogout').click(function () {
+                    $.connection.hub.stop();
+                    close();
+
+                });
+                //Function call to the server Hub to send the messages
+                clickSend.click(function () {
+                    // Call the Send method on the hub.
+                    chat.server.send(userName.val(), txtMessage.val());
+                    txtMessage.val('').focus();
+                    typingStatus.text("Message Sent");
+                });
+
+                //Function call to the server Hub to send the messages on enter key press
+                //and to display to the status to the current user
+
+                txtMessage.keypress(function (event) {
+
+                    if (event.keyCode != 13) {
+                        typingStatus.text("Typing");
+                    }
+                    else {
+                        event.preventDefault();
+                        clickSend.click();
+                    }
+                });
+
+            });
+
+        });
+    </script>
+}
+
