@@ -25,16 +25,24 @@ namespace ChatRoom
             Record record = jsonDeserializer.Deserialize<Record>(restResponse);
             Console.WriteLine(record.has_title.ToString());
             Console.WriteLine(record.title.ToString());
+        
 
             foreach (List<Object> item in record.entries)
             {
                 Console.WriteLine(item[0].ToString());
-                Console.WriteLine(item[1].ToString());
+                IDictionary<string, Object> recordContent;
+                recordContent = item[1] as IDictionary<string,Object>;    
+                foreach (var records in recordContent.Values)
+                {
+                    Console.WriteLine(records.ToString());
+                }
+
             }
 
             Console.ReadLine();
 
         }
-        
+
+     
     }
 }
